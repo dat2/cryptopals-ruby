@@ -3,11 +3,11 @@
 
 require 'sorbet-runtime'
 
-module Cryptopals
+module Cryptopals # rubocop:disable Style/Documentation
   extend T::Sig
 
   sig { params(num: Integer).returns(String) }
-  def self.sextet_to_base64(num)
+  def self.sextet_to_base64(num) # rubocop:disable Metrics/MethodLength
     ascii = case num
             when 0..25
               ('A'.ord + num)
@@ -25,11 +25,11 @@ module Cryptopals
   end
 
   sig { params(bytes: T::Array[Integer]).returns(String) }
-  def self.triplet_to_base64(bytes)
+  def self.triplet_to_base64(bytes) # rubocop:disable Metrics/AbcSize
     first = T.must(bytes[0]) >> 2
-    second = (bytes[0] & 0x03) << 4 | T.must(bytes[1]) >> 4
-    third = ((bytes[1] & 0x0F) << 2) | T.must(bytes[2]) >> 6
-    fourth = bytes[2] & 0x3F
+    second = (T.must(bytes[0]) & 0x03) << 4 | T.must(bytes[1]) >> 4
+    third = ((T.must(bytes[1]) & 0x0F) << 2) | T.must(bytes[2]) >> 6
+    fourth = T.must(bytes[2]) & 0x3F
     [first, second, third, fourth].map { |value| sextet_to_base64(value) }.join ''
   end
 
