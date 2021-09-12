@@ -7,17 +7,19 @@ require 'pp'
 module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
   extend T::Sig
 
-  sig { params(string: String).returns(T::Array[Integer]) }
+  Bytes = T.type_alias { T::Array[Integer] }
+
+  sig { params(string: String).returns(Bytes) }
   def self.to_bytes(string)
     [string].pack('H*').bytes
   end
 
-  sig { params(bytes: T::Array[Integer]).returns(String) }
+  sig { params(bytes: Bytes).returns(String) }
   def self.to_hex(bytes)
     bytes.pack('C*').unpack1('H*')
   end
 
-  sig { params(bytes: T::Array[Integer]).returns(String) }
+  sig { params(bytes: Bytes).returns(String) }
   def self.to_ascii(bytes)
     bytes.pack('C*')
   end
@@ -40,7 +42,7 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
     T.let(ascii, Integer).chr
   end
 
-  sig { params(bytes: T::Array[Integer]).returns(String) }
+  sig { params(bytes: Bytes).returns(String) }
   def self.triplet_to_base64(bytes) # rubocop:disable Metrics/AbcSize
     first = T.must(bytes[0]) >> 2
     second = (T.must(bytes[0]) & 0x03) << 4 | T.must(bytes[1]) >> 4
@@ -49,12 +51,12 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
     [first, second, third, fourth].map { |value| sextet_to_base64(value) }.join ''
   end
 
-  sig { params(input: T::Array[Integer]).returns(String) }
+  sig { params(input: Bytes).returns(String) }
   def self.to_base64(input)
     input.each_slice(3).to_a.map { |bytes| triplet_to_base64(bytes) }.join ''
   end
 
-  sig { params(first: T::Array[Integer], second: T::Array[Integer]).returns(T::Array[Integer]) }
+  sig { params(first: Bytes, second: Bytes).returns(Bytes) }
   def self.fixed_xor(first, second)
     if first.length != second.length
       raise ArgumentError, "Arrays are not of equal length: #{first.length} != #{second.length}"
@@ -106,7 +108,7 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
     end
   end
 
-  sig { params(ciphertext: T::Array[Integer]).returns(T::Array[String]) }
+  sig { params(ciphertext: Bytes).returns(T::Array[String]) }
   def self.decrypt_ciphertext_candidates(ciphertext)
     key_candidates = [].concat(('a'..'z').to_a, ('A'..'Z').to_a, ('0'..'9').to_a,
                                ["!@#$%^&*()_+-=~`[]{}\\|;:\"',./<>?"]).to_a
@@ -116,15 +118,25 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
     end
   end
 
-  sig { params(ciphertext: T::Array[Integer]).returns(String) }
+  sig { params(ciphertext: Bytes).returns(String) }
   def self.xor_decrypt(ciphertext)
     plaintexts = decrypt_ciphertext_candidates(ciphertext)
     T.must(plaintexts.min_by { |plaintext| error_score(plaintext) })
   end
 
-  sig { params(ciphertexts: T::Array[T::Array[Integer]]).returns(String) }
+  sig { params(ciphertexts: T::Array[Bytes]).returns(String) }
   def self.search_xor_decrypt(ciphertexts)
     plaintexts = ciphertexts.flat_map { |ciphertext| decrypt_ciphertext_candidates(ciphertext) }
     T.must(plaintexts.min_by { |plaintext| error_score(plaintext) })
+  end
+
+  sig { params(key: Bytes, length: Integer).returns(Bytes) }
+  def self.derive_key(key, length)
+    (key * length).take(length)
+  end
+
+  sig { params(plaintext: Bytes, key: Bytes).returns(Bytes) }
+  def self.encrypt_xor(plaintext, key)
+    fixed_xor(plaintext, derive_key(key, plaintext.length))
   end
 end
