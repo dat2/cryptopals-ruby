@@ -4,7 +4,7 @@
 require 'sorbet-runtime'
 require 'pp'
 
-module Cryptopals # rubocop:disable Style/Documentation
+module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
   extend T::Sig
 
   sig { params(string: String).returns(T::Array[Integer]) }
@@ -106,14 +106,25 @@ module Cryptopals # rubocop:disable Style/Documentation
     end
   end
 
-  sig { params(ciphertext: T::Array[Integer]).returns(String) }
-  def self.xor_decrypt(ciphertext) # rubocop:disable Metrics/AbcSize
+  sig { params(ciphertext: T::Array[Integer]).returns(T::Array[String]) }
+  def self.decrypt_ciphertext_candidates(ciphertext)
     key_candidates = [].concat(('a'..'z').to_a, ('A'..'Z').to_a, ('0'..'9').to_a,
                                ["!@#$%^&*()_+-=~`[]{}\\|;:\"',./<>?"]).to_a
-    keys = key_candidates.map { |key| Array.new(ciphertext.length, key.ord) }
-    plaintexts = keys.map do |key|
+    key_candidates.map do |key_candidate|
+      key = Array.new(ciphertext.length, key_candidate.ord)
       to_ascii(fixed_xor(key, ciphertext))
     end
-    T.must(plaintexts.min_by { |plaintext| error_score(plaintext.downcase) })
+  end
+
+  sig { params(ciphertext: T::Array[Integer]).returns(String) }
+  def self.xor_decrypt(ciphertext)
+    plaintexts = decrypt_ciphertext_candidates(ciphertext)
+    T.must(plaintexts.min_by { |plaintext| error_score(plaintext) })
+  end
+
+  sig { params(ciphertexts: T::Array[T::Array[Integer]]).returns(String) }
+  def self.search_xor_decrypt(ciphertexts)
+    plaintexts = ciphertexts.flat_map { |ciphertext| decrypt_ciphertext_candidates(ciphertext) }
+    T.must(plaintexts.min_by { |plaintext| error_score(plaintext) })
   end
 end

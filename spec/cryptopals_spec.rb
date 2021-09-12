@@ -35,3 +35,12 @@ describe Cryptopals, '#xor_decrypt' do
     expect(result).to eq 'Cooking MC\'s like a pound of bacon'
   end
 end
+
+describe Cryptopals, '#search_xor_decrypt' do
+  it 'finds the answer' do
+    ciphertexts = IO.readlines('4.txt', chomp: true).map { |line| Cryptopals.to_bytes line }
+
+    result = Cryptopals.search_xor_decrypt ciphertexts
+    expect(result).to eq 'Now that the party is jumping\n'
+  end
+end
