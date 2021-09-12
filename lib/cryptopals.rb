@@ -65,78 +65,137 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
     first.zip(second).map { |a, b| a ^ T.must(b) }.to_a
   end
 
-  # https://en.wikipedia.org/wiki/Letter_frequency
-  ENGLISH_LETTER_FREQUENCIES = {
-    a: 0.082,
-    b: 0.015,
-    c: 0.028,
-    d: 0.043,
-    e: 0.13,
-    f: 0.022,
-    g: 0.02,
-    h: 0.061,
-    i: 0.07,
-    j: 0.0015,
-    k: 0.0077,
-    l: 0.04,
-    m: 0.024,
-    n: 0.067,
-    o: 0.075,
-    p: 0.019,
-    q: 0.000095,
-    r: 0.06,
-    s: 0.063,
-    t: 0.091,
-    u: 0.028,
-    v: 0.0098,
-    w: 0.024,
-    x: 0.0015,
-    y: 0.02,
-    z: 0.00074
-  }.freeze
+  class DecryptionResult # :nodoc:
+    extend T::Sig
 
-  sig { params(plaintext: String).returns(Float) }
-  def self.error_score(plaintext)
-    # if there are too many non english characters, this is probably not an english sentence
-    count_special_characters = plaintext.tr('a-z', '').tr(' ', '').length
+    attr_reader :plaintext, :key
 
-    ENGLISH_LETTER_FREQUENCIES.reduce(count_special_characters) do |total, (letter, standard_frequency)|
-      # if the frequency of the letters are too different from typical letter frequencies
-      # it's probably not an englishsentence
-      letter_frequency = plaintext.count(letter.to_s).to_f / plaintext.length
-      total + (letter_frequency - standard_frequency).abs
+    sig { params(plaintext: Bytes, key: Bytes).void }
+    def initialize(plaintext, key)
+      @plaintext = plaintext
+      @key = key
+    end
+
+    # https://en.wikipedia.org/wiki/Letter_frequency
+    ENGLISH_LETTER_FREQUENCIES = {
+      a: 0.082,
+      b: 0.015,
+      c: 0.028,
+      d: 0.043,
+      e: 0.13,
+      f: 0.022,
+      g: 0.02,
+      h: 0.061,
+      i: 0.07,
+      j: 0.0015,
+      k: 0.0077,
+      l: 0.04,
+      m: 0.024,
+      n: 0.067,
+      o: 0.075,
+      p: 0.019,
+      q: 0.000095,
+      r: 0.06,
+      s: 0.063,
+      t: 0.091,
+      u: 0.028,
+      v: 0.0098,
+      w: 0.024,
+      x: 0.0015,
+      y: 0.02,
+      z: 0.00074
+    }.freeze
+
+    sig { returns(Float) }
+    def error
+      plaintext = Cryptopals.to_ascii(@plaintext)
+
+      # if there are too many non english characters, this is probably not an english sentence
+      count_special_characters = plaintext.tr('a-z', '').tr(' ', '').length
+
+      ENGLISH_LETTER_FREQUENCIES.reduce(count_special_characters) do |total, (letter, standard_frequency)|
+        # if the frequency of the letters are too different from typical letter frequencies
+        # it's probably not an englishsentence
+        letter_frequency = plaintext.count(letter.to_s).to_f / plaintext.length
+        total + (letter_frequency - standard_frequency).abs
+      end
+    end
+
+    def to_s
+      Cryptopals.to_ascii(@plaintext)
+    end
+
+    def inspect
+      "DecryptionResult(plaintext=#{Cryptopals.to_ascii(@plaintext)}, key=#{Cryptopals.to_ascii(@key)})"
     end
   end
 
-  sig { params(ciphertext: Bytes).returns(T::Array[String]) }
+  sig { params(ciphertext: Bytes).returns(T::Array[DecryptionResult]) }
   def self.decrypt_ciphertext_candidates(ciphertext)
-    key_candidates = [].concat(('a'..'z').to_a, ('A'..'Z').to_a, ('0'..'9').to_a,
-                               ["!@#$%^&*()_+-=~`[]{}\\|;:\"',./<>?"]).to_a
+    key_candidates = [
+      *'a'..'z',
+      *'A'..'Z',
+      *'0'..'9',
+      *"!@#$%^&*()_+-=~`[]{}\\|;:\"',./<>?".chars
+    ].map(&:ord)
     key_candidates.map do |key_candidate|
-      key = Array.new(ciphertext.length, key_candidate.ord)
-      to_ascii(fixed_xor(key, ciphertext))
+      key = Array.new(ciphertext.length, key_candidate)
+      DecryptionResult.new(fixed_xor(key, ciphertext), key)
     end
   end
 
-  sig { params(ciphertext: Bytes).returns(String) }
-  def self.xor_decrypt(ciphertext)
-    plaintexts = decrypt_ciphertext_candidates(ciphertext)
-    T.must(plaintexts.min_by { |plaintext| error_score(plaintext) })
+  sig { params(ciphertext: Bytes).returns(DecryptionResult) }
+  def self.decrypt_fixed_xor(ciphertext)
+    T.must(decrypt_ciphertext_candidates(ciphertext).min_by(&:error))
   end
 
-  sig { params(ciphertexts: T::Array[Bytes]).returns(String) }
-  def self.search_xor_decrypt(ciphertexts)
-    plaintexts = ciphertexts.flat_map { |ciphertext| decrypt_ciphertext_candidates(ciphertext) }
-    T.must(plaintexts.min_by { |plaintext| error_score(plaintext) })
-  end
-
-  sig { params(key: Bytes, length: Integer).returns(Bytes) }
-  def self.derive_key(key, length)
-    (key * length).take(length)
+  sig { params(ciphertexts: T::Array[Bytes]).returns(DecryptionResult) }
+  def self.break_fixed_xor(ciphertexts)
+    T.must(ciphertexts.flat_map { |ciphertext| decrypt_ciphertext_candidates(ciphertext) }.min_by(&:error))
   end
 
   sig { params(plaintext: Bytes, key: Bytes).returns(Bytes) }
-  def self.encrypt_xor(plaintext, key)
-    fixed_xor(plaintext, derive_key(key, plaintext.length))
+  def self.repeating_key_xor(plaintext, key)
+    fixed_xor(plaintext, key.cycle(plaintext.length).take(plaintext.length))
+  end
+
+  sig { params(first: Bytes, second: Bytes).returns(Integer) }
+  def self.hamming_distance(first, second)
+    first.zip(second).reduce(0) do |acc, (first_byte, second_byte)|
+      acc + (first_byte ^ T.must(second_byte)).to_s(2).count('1')
+    end
+  end
+
+  sig { params(input: T::Array[Integer]).returns(Float) }
+  def self.average(input)
+    input.sum.fdiv(input.size)
+  end
+
+  sig { params(input: Bytes).returns(T::Array[Integer]) }
+  def self.keysizes(input)
+    (2..40).sort_by do |keysize|
+      distances = input.each_slice(keysize).take(4).each_slice(2).map do |first, second|
+        hamming_distance(T.must(first), T.must(second))
+      end
+      average(distances) / keysize
+    end
+  end
+
+  sig { params(ciphertext: Bytes, keysize: Integer).returns(T::Array[Bytes]) }
+  def self.transpose(ciphertext, keysize)
+    blocks = ciphertext.each_slice(keysize).to_a
+    blocks[0].zip(*blocks[1..]).map(&:compact)
+  end
+
+  sig { params(ciphertext: Bytes).returns(DecryptionResult) }
+  def self.break_repeating_key_xor(ciphertext)
+    results = keysizes(ciphertext).map do |keysize|
+      key_bytes = transpose(ciphertext, keysize).map do |block|
+        decrypt_fixed_xor(block)
+      end
+      key = key_bytes.map(&:key).map(&:first)
+      DecryptionResult.new(repeating_key_xor(ciphertext, key), key)
+    end
+    T.must(results.min_by(&:error))
   end
 end
