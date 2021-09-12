@@ -2,9 +2,25 @@
 # frozen_string_literal: true
 
 require 'sorbet-runtime'
+require 'pp'
 
 module Cryptopals # rubocop:disable Style/Documentation
   extend T::Sig
+
+  sig { params(string: String).returns(T::Array[Integer]) }
+  def self.to_bytes(string)
+    [string].pack('H*').bytes
+  end
+
+  sig { params(bytes: T::Array[Integer]).returns(String) }
+  def self.to_hex(bytes)
+    bytes.pack('C*').unpack1('H*')
+  end
+
+  sig { params(bytes: T::Array[Integer]).returns(String) }
+  def self.to_ascii(bytes)
+    bytes.pack('C*')
+  end
 
   sig { params(num: Integer).returns(String) }
   def self.sextet_to_base64(num) # rubocop:disable Metrics/MethodLength
@@ -21,7 +37,7 @@ module Cryptopals # rubocop:disable Style/Documentation
               '/'.ord
             else raise ArgumentError, "#{num} is not valid."
             end
-    T.must(ascii).chr
+    T.let(ascii, Integer).chr
   end
 
   sig { params(bytes: T::Array[Integer]).returns(String) }
@@ -33,8 +49,71 @@ module Cryptopals # rubocop:disable Style/Documentation
     [first, second, third, fourth].map { |value| sextet_to_base64(value) }.join ''
   end
 
-  sig { params(input: String).returns(String) }
-  def self.hex_to_base64(input)
-    [input].pack('H*').bytes.each_slice(3).to_a.map { |bytes| triplet_to_base64(bytes) }.join ''
+  sig { params(input: T::Array[Integer]).returns(String) }
+  def self.to_base64(input)
+    input.each_slice(3).to_a.map { |bytes| triplet_to_base64(bytes) }.join ''
+  end
+
+  sig { params(first: T::Array[Integer], second: T::Array[Integer]).returns(T::Array[Integer]) }
+  def self.fixed_xor(first, second)
+    if first.length != second.length
+      raise ArgumentError, "Arrays are not of equal length: #{first.length} != #{second.length}"
+    end
+
+    first.zip(second).map { |a, b| a ^ T.must(b) }.to_a
+  end
+
+  # https://en.wikipedia.org/wiki/Letter_frequency
+  ENGLISH_LETTER_FREQUENCIES = {
+    a: 0.082,
+    b: 0.015,
+    c: 0.028,
+    d: 0.043,
+    e: 0.13,
+    f: 0.022,
+    g: 0.02,
+    h: 0.061,
+    i: 0.07,
+    j: 0.0015,
+    k: 0.0077,
+    l: 0.04,
+    m: 0.024,
+    n: 0.067,
+    o: 0.075,
+    p: 0.019,
+    q: 0.000095,
+    r: 0.06,
+    s: 0.063,
+    t: 0.091,
+    u: 0.028,
+    v: 0.0098,
+    w: 0.024,
+    x: 0.0015,
+    y: 0.02,
+    z: 0.00074
+  }.freeze
+
+  sig { params(plaintext: String).returns(Float) }
+  def self.error_score(plaintext)
+    # if there are too many non english characters, this is probably not an english sentence
+    count_special_characters = plaintext.tr('a-z', '').tr(' ', '').length
+
+    ENGLISH_LETTER_FREQUENCIES.reduce(count_special_characters) do |total, (letter, standard_frequency)|
+      # if the frequency of the letters are too different from typical letter frequencies
+      # it's probably not an englishsentence
+      letter_frequency = plaintext.count(letter.to_s).to_f / plaintext.length
+      total + (letter_frequency - standard_frequency).abs
+    end
+  end
+
+  sig { params(ciphertext: T::Array[Integer]).returns(String) }
+  def self.xor_decrypt(ciphertext) # rubocop:disable Metrics/AbcSize
+    key_candidates = [].concat(('a'..'z').to_a, ('A'..'Z').to_a, ('0'..'9').to_a,
+                               ["!@#$%^&*()_+-=~`[]{}\\|;:\"',./<>?"]).to_a
+    keys = key_candidates.map { |key| Array.new(ciphertext.length, key.ord) }
+    plaintexts = keys.map do |key|
+      to_ascii(fixed_xor(key, ciphertext))
+    end
+    T.must(plaintexts.min_by { |plaintext| error_score(plaintext.downcase) })
   end
 end
