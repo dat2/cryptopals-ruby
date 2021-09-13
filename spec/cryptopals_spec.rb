@@ -34,7 +34,7 @@ describe Cryptopals, '#decrypt_fixed_xor' do
 
     result = Cryptopals.decrypt_fixed_xor bytes
 
-    expect(result.plaintext).to eq('Cooking MC\'s like a pound of bacon'.bytes)
+    expect(result.to_s).to eq('Cooking MC\'s like a pound of bacon')
   end
 end
 
@@ -44,7 +44,7 @@ describe Cryptopals, '#break_fixed_xor' do
 
     result = Cryptopals.break_fixed_xor ciphertexts
 
-    expect(result.plaintext).to eq("Now that the party is jumping\n".bytes)
+    expect(result.to_s).to eq("Now that the party is jumping\n")
   end
 end
 
@@ -76,8 +76,12 @@ describe Cryptopals, '#break_repeating_key_xor' do
   it 'finds the answer' do
     ciphertext_encoded = IO.readlines('6.txt', chomp: true).join('')
     ciphertext = Base64.decode64(ciphertext_encoded).bytes
-    result = Cryptopals.break_repeating_key_xor(ciphertext)
+
     expected = IO.readlines('6_result.txt').join('')
+
+    result = Cryptopals.break_repeating_key_xor(ciphertext)
+
+    expect(Cryptopals.to_ascii(result.key)).to eq('Terminator X: Bring the noise')
     expect(result.to_s).to eq(expected)
   end
 end

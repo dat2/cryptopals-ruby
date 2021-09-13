@@ -108,15 +108,15 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
 
     sig { returns(Float) }
     def error
-      plaintext = Cryptopals.to_ascii(@plaintext)
+      plaintext = Cryptopals.to_ascii(@plaintext).downcase
 
       # if there are too many non english characters, this is probably not an english sentence
-      count_special_characters = plaintext.tr('a-z', '').tr(' ', '').length
+      penalty = plaintext.tr("a-z '", '').length
 
-      ENGLISH_LETTER_FREQUENCIES.reduce(count_special_characters) do |total, (letter, standard_frequency)|
+      ENGLISH_LETTER_FREQUENCIES.reduce(penalty) do |total, (letter, standard_frequency)|
         # if the frequency of the letters are too different from typical letter frequencies
         # it's probably not an englishsentence
-        letter_frequency = plaintext.count(letter.to_s).to_f / plaintext.length
+        letter_frequency = plaintext.count(letter.to_s).fdiv(plaintext.length)
         total + (letter_frequency - standard_frequency).abs
       end
     end
@@ -136,7 +136,7 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
       *'a'..'z',
       *'A'..'Z',
       *'0'..'9',
-      *"!@#$%^&*()_+-=~`[]{}\\|;:\"',./<>?".chars
+      *"!@\#$%^&*() :".chars
     ].map(&:ord)
     key_candidates.map do |key_candidate|
       key = Array.new(ciphertext.length, key_candidate)

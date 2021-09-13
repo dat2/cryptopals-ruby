@@ -9,5 +9,5 @@ jobs:
         with:
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - run: bundle exec rake rubocop
-      - run: bundle exec srb tc
       - run: bundle exec rake spec
+      - run: bundle exec srb tc
