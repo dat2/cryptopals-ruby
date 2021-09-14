@@ -184,7 +184,7 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
   sig { params(ciphertext: Bytes, keysize: Integer).returns(T::Array[Bytes]) }
   def self.transpose(ciphertext, keysize)
     blocks = ciphertext.each_slice(keysize).to_a
-    blocks[0].zip(*blocks[1..]).map(&:compact)
+    blocks[0].zip(*T.unsafe(blocks[1..])).map(&:compact)
   end
 
   sig { params(ciphertext: Bytes).returns(DecryptionResult) }
