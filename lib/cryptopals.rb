@@ -3,6 +3,7 @@
 
 require 'sorbet-runtime'
 require 'pp'
+require 'openssl'
 
 module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
   extend T::Sig
@@ -197,5 +198,12 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
       DecryptionResult.new(repeating_key_xor(ciphertext, key), key)
     end
     T.must(results.min_by(&:error))
+  end
+
+  sig { params(ciphertext: String, key: String).returns(String) }
+  def self.aes_128_ecb_decrypt(ciphertext, key)
+    cipher = OpenSSL::Cipher.new('aes-128-ecb').decrypt
+    cipher.key = key
+    cipher.update(ciphertext) + cipher.final
   end
 end

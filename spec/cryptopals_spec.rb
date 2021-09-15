@@ -85,3 +85,14 @@ describe Cryptopals, '#break_repeating_key_xor' do
     expect(result.to_s).to eq(expected)
   end
 end
+
+describe Cryptopals, '#aes_128_ecb_decrypt' do
+  it 'decrypts the answer' do
+    ciphertext_encoded = IO.readlines('7.txt', chomp: true).join('')
+    ciphertext = Base64.decode64(ciphertext_encoded)
+
+    expected = IO.readlines('6_result.txt').join('')
+
+    expect(Cryptopals.aes_128_ecb_decrypt(ciphertext, 'YELLOW SUBMARINE')).to eq(expected)
+  end
+end
