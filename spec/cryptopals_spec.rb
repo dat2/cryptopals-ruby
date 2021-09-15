@@ -91,8 +91,19 @@ describe Cryptopals, '#aes_128_ecb_decrypt' do
     ciphertext_encoded = IO.readlines('7.txt', chomp: true).join('')
     ciphertext = Base64.decode64(ciphertext_encoded)
 
+    result = Cryptopals.aes_128_ecb_decrypt(ciphertext, 'YELLOW SUBMARINE')
     expected = IO.readlines('6_result.txt').join('')
 
-    expect(Cryptopals.aes_128_ecb_decrypt(ciphertext, 'YELLOW SUBMARINE')).to eq(expected)
+    expect(result).to eq(expected)
+  end
+end
+
+describe Cryptopals, '#find_index_aes_128_ecb' do
+  it 'finds the right one' do
+    ciphertexts = IO.readlines('8.txt', chomp: true).map { |hex_string| Cryptopals.to_bytes(hex_string) }
+
+    result = Cryptopals.find_index_aes_128_ecb(ciphertexts)
+
+    expect(result).to eq(132)
   end
 end

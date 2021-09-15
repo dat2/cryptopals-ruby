@@ -206,4 +206,12 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
     cipher.key = key
     cipher.update(ciphertext) + cipher.final
   end
+
+  sig { params(ciphertexts: T::Array[Bytes]).returns(Integer) }
+  def self.find_index_aes_128_ecb(ciphertexts)
+    T.must(ciphertexts.find_index do |ciphertext|
+      slices = ciphertext.each_slice(16).to_a
+      slices.uniq.length != slices.length
+    end)
+  end
 end
