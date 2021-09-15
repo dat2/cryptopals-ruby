@@ -107,3 +107,9 @@ describe Cryptopals, '#find_index_aes_128_ecb' do
     expect(result).to eq(132)
   end
 end
+
+describe Cryptopals, '#pkcs7_pad' do
+  it 'is correct' do
+    expect(Cryptopals.pkcs7_pad('YELLOW SUBMARINE'.bytes, 20)).to eq("YELLOW SUBMARINE\x04\x04\x04\x04".bytes)
+  end
+end

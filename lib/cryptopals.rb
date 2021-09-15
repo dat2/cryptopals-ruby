@@ -214,4 +214,10 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
       slices.uniq.length != slices.length
     end)
   end
+
+  sig { params(bytes: Bytes, length: Integer).returns(Bytes) }
+  def self.pkcs7_pad(bytes, length)
+    pad = length - bytes.length
+    bytes.concat([pad] * pad)
+  end
 end
