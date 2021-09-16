@@ -17,11 +17,11 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
 
   sig { params(bytes: Bytes).returns(String) }
   def self.to_hex(bytes)
-    bytes.pack('C*').unpack1('H*')
+    to_string(bytes).unpack1('H*')
   end
 
   sig { params(bytes: Bytes).returns(String) }
-  def self.to_ascii(bytes)
+  def self.to_string(bytes)
     bytes.pack('C*')
   end
 
@@ -109,7 +109,7 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
 
     sig { returns(Float) }
     def error
-      plaintext = Cryptopals.to_ascii(@plaintext).downcase
+      plaintext = Cryptopals.to_string(@plaintext).downcase
 
       # if there are too many non english characters, this is probably not an english sentence
       penalty = plaintext.tr("a-z '", '').length
@@ -123,11 +123,11 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
     end
 
     def to_s
-      Cryptopals.to_ascii(@plaintext)
+      Cryptopals.to_string(@plaintext)
     end
 
     def inspect
-      "DecryptionResult(plaintext=#{Cryptopals.to_ascii(@plaintext)}, key=#{Cryptopals.to_ascii(@key)})"
+      "DecryptionResult(plaintext=#{Cryptopals.to_string(@plaintext)}, key=#{Cryptopals.to_string(@key)})"
     end
   end
 
@@ -200,11 +200,28 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
     T.must(results.min_by(&:error))
   end
 
-  sig { params(ciphertext: String, key: String).returns(String) }
+  sig { params(plaintext: Bytes, key: Bytes).returns(Bytes) }
+  def self.aes_128_ecb_encrypt(plaintext, key)
+    raise ArgumentError, "plaintext not multiple of 16, #{plaintext.length}" unless (plaintext.length % 16).zero?
+
+    cipher = OpenSSL::Cipher.new('aes-128-ecb')
+    cipher.encrypt
+    cipher.padding = 0
+    cipher.key = to_string(key)
+    result = (cipher.update(to_string(plaintext)) + cipher.final)
+    result.bytes
+  end
+
+  sig { params(ciphertext: Bytes, key: Bytes).returns(Bytes) }
   def self.aes_128_ecb_decrypt(ciphertext, key)
-    cipher = OpenSSL::Cipher.new('aes-128-ecb').decrypt
-    cipher.key = key
-    cipher.update(ciphertext) + cipher.final
+    raise ArgumentError, "ciphertext not multiple of 16, #{ciphertext.length}" unless (ciphertext.length % 16).zero?
+
+    cipher = OpenSSL::Cipher.new('aes-128-ecb')
+    cipher.decrypt
+    cipher.padding = 0
+    cipher.key = to_string(key)
+    result = cipher.update(to_string(ciphertext)) + cipher.final
+    result.bytes
   end
 
   sig { params(ciphertexts: T::Array[Bytes]).returns(Integer) }
@@ -219,5 +236,20 @@ module Cryptopals # rubocop:disable Style/Documentation,Metrics/ModuleLength
   def self.pkcs7_pad(bytes, length)
     pad = length - bytes.length
     bytes.concat([pad] * pad)
+  end
+
+  sig { params(ciphertext: Bytes, key: Bytes, iv: Bytes).returns(Bytes) }
+  def self.aes_128_cbc_decrypt(ciphertext, key, iv)
+    blocks = ciphertext.each_slice(16).to_a
+    plaintext = []
+    last_ciphertext = iv
+    blocks.each do |block|
+      plaintext.concat(fixed_xor(
+                         aes_128_ecb_decrypt(block, key),
+                         last_ciphertext
+                       ))
+      last_ciphertext = block
+    end
+    plaintext
   end
 end

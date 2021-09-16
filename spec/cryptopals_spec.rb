@@ -73,7 +73,7 @@ describe Cryptopals, '#hamming_distance' do
 end
 
 describe Cryptopals, '#break_repeating_key_xor' do
-  it 'finds the answer' do
+  xit 'finds the answer' do
     ciphertext_encoded = IO.readlines('6.txt', chomp: true).join('')
     ciphertext = Base64.decode64(ciphertext_encoded).bytes
 
@@ -81,20 +81,19 @@ describe Cryptopals, '#break_repeating_key_xor' do
 
     result = Cryptopals.break_repeating_key_xor(ciphertext)
 
-    expect(Cryptopals.to_ascii(result.key)).to eq('Terminator X: Bring the noise')
+    expect(Cryptopals.to_string(result.key)).to eq('Terminator X: Bring the noise')
     expect(result.to_s).to eq(expected)
   end
 end
 
 describe Cryptopals, '#aes_128_ecb_decrypt' do
-  it 'decrypts the answer' do
-    ciphertext_encoded = IO.readlines('7.txt', chomp: true).join('')
-    ciphertext = Base64.decode64(ciphertext_encoded)
+  it 'works' do
+    plaintext = 'orange submarine'.bytes
+    key = 'YELLOW SUBMARINE'.bytes
 
-    result = Cryptopals.aes_128_ecb_decrypt(ciphertext, 'YELLOW SUBMARINE')
-    expected = IO.readlines('6_result.txt').join('')
+    result = Cryptopals.aes_128_ecb_decrypt(Cryptopals.aes_128_ecb_encrypt(plaintext, key), key)
 
-    expect(result).to eq(expected)
+    expect(result).to eq(plaintext)
   end
 end
 
@@ -111,5 +110,19 @@ end
 describe Cryptopals, '#pkcs7_pad' do
   it 'is correct' do
     expect(Cryptopals.pkcs7_pad('YELLOW SUBMARINE'.bytes, 20)).to eq("YELLOW SUBMARINE\x04\x04\x04\x04".bytes)
+  end
+end
+
+describe Cryptopals, '#aes_128_cbc_decrypt' do
+  it 'works' do
+    ciphertext_encoded = IO.readlines('10.txt', chomp: true).join('')
+    ciphertext = Base64.decode64(ciphertext_encoded).bytes
+
+    result = Cryptopals.aes_128_cbc_decrypt(ciphertext, 'YELLOW SUBMARINE'.bytes, [0] * 16)
+
+    expected = File.open('10_result.txt').read.bytes
+    pad_length = expected.length + expected.length % 16
+
+    expect(result).to eq(Cryptopals.pkcs7_pad(expected, pad_length))
   end
 end
