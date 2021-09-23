@@ -9,3 +9,4 @@ gem 'rubocop-rake', require: false
 gem 'rubocop-rspec', require: false
 gem 'sorbet', group: :development
 gem 'sorbet-runtime'
+gem 'sorbet-struct-comparable'

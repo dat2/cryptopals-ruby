@@ -44,6 +44,8 @@ GEM
       sorbet-static (= 0.5.9125)
     sorbet-runtime (0.5.9125)
     sorbet-static (0.5.9125-universal-darwin-14)
+    sorbet-struct-comparable (1.1.0)
+      sorbet-runtime (>= 0.5)
     unicode-display_width (2.0.0)
 
 PLATFORMS
@@ -57,6 +59,7 @@ DEPENDENCIES
   rubocop-rspec
   sorbet
   sorbet-runtime
+  sorbet-struct-comparable
 
 BUNDLED WITH
    1.17.2
