@@ -7,7 +7,7 @@ require 'sorbet-struct-comparable'
 module Cryptopals
   # Bytes is a wrapper around an array of integers with some helpful methods built in.
   class Bytes < T::Struct # rubocop:disable Metrics/ClassLength
-    include Comparable
+    include T::Struct::ActsAsComparable
 
     extend T::Sig
 
