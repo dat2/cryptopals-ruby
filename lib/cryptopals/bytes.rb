@@ -124,7 +124,7 @@ module Cryptopals
     sig { params(size: Integer).returns(T::Array[Bytes]) }
     def transpose(size)
       matrix = chunks(size)
-      matrix.each_index.map do |row|
+      (0..size - 1).map do |row|
         Bytes.new(bytes: matrix.each_index.map do |column|
           T.must(matrix[column]).bytes.fetch(row, nil)
         end.compact)

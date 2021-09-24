@@ -4,7 +4,7 @@
 require 'cryptopals'
 require 'base64'
 
-describe Cryptopals::Bytes do
+describe Cryptopals::Bytes do # rubocop:disable Metrics/BlockLength
   describe '#to_base64' do
     it 'converts to base64 correctly' do
       # rubocop:disable Layout/LineLength
@@ -29,9 +29,8 @@ describe Cryptopals::Bytes do
     it 'works' do
       input = Cryptopals::Bytes.new(bytes: [1, 2])
 
-      expect(input.repeat(5)).to eq(Cryptopals::Bytes.new(bytes: [1,2,1,2,1]))
+      expect(input.repeat(5)).to eq(Cryptopals::Bytes.new(bytes: [1, 2, 1, 2, 1]))
     end
-
   end
 
   describe '#transpose' do
@@ -42,6 +41,15 @@ describe Cryptopals::Bytes do
                                          Cryptopals::Bytes.new(bytes: [1, 4, 7]),
                                          Cryptopals::Bytes.new(bytes: [2, 5, 8]),
                                          Cryptopals::Bytes.new(bytes: [3, 6])
+                                       ])
+    end
+
+    it 'works with small sizes' do
+      input = Cryptopals::Bytes.new(bytes: [0] * 2876)
+
+      expect(input.transpose(2)).to eq([
+                                         Cryptopals::Bytes.new(bytes: [0] * 1438),
+                                         Cryptopals::Bytes.new(bytes: [0] * 1438)
                                        ])
     end
   end
