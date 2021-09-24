@@ -13,6 +13,11 @@ module Cryptopals
 
     prop :bytes, T::Array[Integer]
 
+    sig { params(length: Integer, default: Integer).returns(Bytes) }
+    def self.fill(length, default)
+      new(bytes: Array.new(length, default))
+    end
+
     sig { params(str: String).returns(Bytes) }
     def self.from_string(str)
       new(bytes: str.bytes)
@@ -105,14 +110,25 @@ module Cryptopals
       @bytes.length
     end
 
-    sig { params(n: Integer).returns(Bytes) }
-    def repeat(n) # rubocop:disable Naming/MethodParameterName
-      Bytes.new(bytes: @bytes.cycle(n).to_a)
+    sig { params(length: Integer).returns(Bytes) }
+    def repeat(length)
+      num_cycles = length.fdiv(@bytes.length).ceil
+      Bytes.new(bytes: @bytes.cycle(num_cycles).take(length).to_a)
     end
 
-    sig { params(n: Integer).returns(Bytes) }
-    def take(n) # rubocop:disable Naming/MethodParameterName
-      Bytes.new(bytes: @bytes.take(n))
+    sig { params(size: Integer).returns(T::Array[Bytes]) }
+    def chunks(size)
+      @bytes.each_slice(size).map { |bytes| Bytes.new(bytes: bytes) }
+    end
+
+    sig { params(size: Integer).returns(T::Array[Bytes]) }
+    def transpose(size)
+      matrix = chunks(size)
+      matrix.each_index.map do |row|
+        Bytes.new(bytes: matrix.each_index.map do |column|
+          T.must(matrix[column]).bytes.fetch(row, nil)
+        end.compact)
+      end
     end
 
     private
