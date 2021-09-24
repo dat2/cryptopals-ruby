@@ -73,4 +73,46 @@ module Cryptopals # rubocop:disable Style/Documentation
       slices.uniq.length != slices.length
     end)
   end
+
+  # encryption type exists so we can do type checking on the return value of detect_encryption_type
+  class EncryptionType < T::Enum
+    enums do
+      CBC = new
+      ECB = new
+      UNKNOWN = new
+    end
+  end
+
+  # this class stores the ciphertext and the type of encryption we used on it.
+  class EncryptionOracleResult < T::Struct
+    const :ciphertext, Bytes
+    const :type, EncryptionType
+  end
+
+  sig { params(plaintext: Bytes).returns(EncryptionOracleResult) }
+  def self.encryption_oracle(plaintext) # rubocop:disable Metrics/MethodLength
+    key = Cryptopals::Bytes.random(16)
+    before = Cryptopals::Bytes.random(rand(5..10))
+    after = Cryptopals::Bytes.random(rand(5..10))
+
+    plaintext_to_encrypt = (before + plaintext + after).pkcs7_pad_to(16)
+
+    if rand(2).zero?
+      EncryptionOracleResult.new(ciphertext: plaintext_to_encrypt.aes_128_ecb_encrypt(key), type: EncryptionType::ECB)
+    else
+      iv = Cryptopals::Bytes.random(16)
+      EncryptionOracleResult.new(ciphertext: plaintext_to_encrypt.aes_128_cbc_encrypt(key, iv),
+                                 type: EncryptionType::CBC)
+    end
+  end
+
+  sig { params(ciphertext: Bytes).returns(EncryptionType) }
+  def self.detect_encryption_type(ciphertext)
+    chunks = ciphertext.chunks(16)
+    if chunks.uniq.length != chunks.length
+      EncryptionType::ECB
+    else
+      EncryptionType::CBC
+    end
+  end
 end

@@ -31,6 +31,11 @@ module Cryptopals
       new(bytes: Base64.decode64(input).bytes)
     end
 
+    sig { params(size: Integer).returns(Bytes) }
+    def self.random(size)
+      from_string Random.urandom(size)
+    end
+
     sig { returns(String) }
     def to_s
       @bytes.pack('C*')
@@ -68,6 +73,11 @@ module Cryptopals
       Bytes.new(bytes: @bytes.concat([pad] * pad))
     end
 
+    sig { params(block_size: Integer).returns(Bytes) }
+    def pkcs7_pad_to(block_size)
+      pkcs7_pad(length.fdiv(block_size).ceil * block_size)
+    end
+
     sig { params(key: Bytes).returns(Bytes) }
     def aes_128_ecb_encrypt(key)
       raise ArgumentError, "plaintext not multiple of 16, #{@bytes.length}" unless (@bytes.length % 16).zero?
@@ -88,6 +98,19 @@ module Cryptopals
       cipher.decrypt
       cipher.padding = 0
       cipher.key = key.to_s
+      result = cipher.update(to_s) + cipher.final
+      Bytes.new(bytes: result.bytes)
+    end
+
+    sig { params(key: Bytes, iv: Bytes).returns(Bytes) }
+    def aes_128_cbc_encrypt(key, iv) # rubocop:disable Metrics/AbcSize,Naming/MethodParameterName
+      raise ArgumentError, "plaintext not multiple of 16, #{@bytes.length}" unless (@bytes.length % 16).zero?
+
+      cipher = OpenSSL::Cipher.new('aes-128-cbc')
+      cipher.encrypt
+      cipher.padding = 0
+      cipher.key = key.to_s
+      cipher.iv = iv.to_s
       result = cipher.update(to_s) + cipher.final
       Bytes.new(bytes: result.bytes)
     end
@@ -138,8 +161,14 @@ module Cryptopals
       self == other
     end
 
+    sig { returns(Integer) }
     def hash
       @bytes.hash
+    end
+
+    sig { params(other: Bytes).returns(Bytes) }
+    def +(other)
+      Bytes.new(bytes: @bytes + other.bytes)
     end
 
     private

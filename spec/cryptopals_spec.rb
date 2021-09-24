@@ -154,3 +154,15 @@ describe Cryptopals, '#aes_128_cbc_decrypt' do
     expect(result).to eq(expected)
   end
 end
+
+describe Cryptopals, '#detect_encryption_type' do
+  it 'works' do
+    # if the input has patterns (of 16 bytes) then ECB will produce the same ciphertext
+    plaintext = Cryptopals::Bytes.fill(64, 0)
+
+    encrypted = Cryptopals.encryption_oracle(plaintext)
+    result = Cryptopals.detect_encryption_type encrypted.ciphertext
+
+    expect(result).to eq(encrypted.type)
+  end
+end
