@@ -149,9 +149,7 @@ describe Cryptopals, '#aes_128_cbc_decrypt' do
 
     result = ciphertext.aes_128_cbc_decrypt(key, iv)
 
-    expected_result = Cryptopals::Bytes.from_string(File.open('10_result.txt').read)
-    pad_length = expected_result.length + expected_result.length % 16
-    expected = expected_result.pkcs7_pad(pad_length)
+    expected = Cryptopals::Bytes.from_string(File.open('10_result.txt').read)
 
     expect(result).to eq(expected)
   end
