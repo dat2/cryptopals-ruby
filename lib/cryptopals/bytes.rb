@@ -7,8 +7,6 @@ require 'sorbet-struct-comparable'
 module Cryptopals
   # Bytes is a wrapper around an array of integers with some helpful methods built in.
   class Bytes < T::Struct # rubocop:disable Metrics/ClassLength
-    include T::Struct::ActsAsComparable
-
     extend T::Sig
 
     prop :bytes, T::Array[Integer]
@@ -125,10 +123,23 @@ module Cryptopals
     def transpose(size)
       matrix = chunks(size)
       (0..size - 1).map do |row|
-        Bytes.new(bytes: matrix.each_index.map do |column|
-          T.must(matrix[column]).bytes.fetch(row, nil)
-        end.compact)
+        bytes = matrix.each_index.map do |column|
+          T.must(matrix[column]).bytes.at(row)
+        end.compact
+        Bytes.new(bytes: bytes)
       end
+    end
+
+    def ==(other)
+      other.class == self.class && other.bytes == @bytes
+    end
+
+    def eql?(other)
+      self == other
+    end
+
+    def hash
+      @bytes.hash
     end
 
     private

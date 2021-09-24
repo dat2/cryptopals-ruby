@@ -38,8 +38,6 @@ ENGLISH_LETTER_FREQUENCIES = {
 module Cryptopals
   # DecryptionResult stores the ciphertext, plaintext, and key that decrypted the ciphertext to the plaintext.
   class DecryptionResult < T::Struct
-    include T::Struct::ActsAsComparable
-
     extend T::Sig
 
     const :ciphertext, Bytes
@@ -63,6 +61,16 @@ module Cryptopals
 
     def to_s
       @plaintext.to_s
+    end
+
+    def ==(other)
+      other.class == self.class && other.state == state
+    end
+
+    protected
+
+    def state
+      [@ciphertext, @plaintext, @key]
     end
   end
 end

@@ -70,7 +70,7 @@ module Cryptopals # rubocop:disable Style/Documentation
   def self.find_index_aes_128_ecb(ciphertexts)
     T.must(ciphertexts.find_index do |ciphertext|
       slices = ciphertext.chunks(16)
-      slices.uniq(&:bytes).length != slices.length
+      slices.uniq.length != slices.length
     end)
   end
 end
